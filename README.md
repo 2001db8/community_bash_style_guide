@@ -44,9 +44,23 @@ This should be seen as an ongoing discussion, you might want to open an
 Issue in this GitHub repository if you disagree.
 
 * use the `#!/usr/bin/env bash` shebang wherever possible
-* never use TAB for intendation
-* consistently use two (2), three (3) or four (4) character intendation.
-  These are indeed mutually exclusive.
+* memorize and utilize `set -eu -o pipefail` at the very beginning of
+  your code:
+  * never write a script without `set -e` at the very very beginning.
+  This instructs bash to terminate in case a command or chain of command
+  finishes with a non-zero exit status. The idea behind this is that a proper
+  programm should never have unhandled error conditions. Use constructs like
+  `if myprogramm --parameter ; then ... ` for calls that might fail and
+  require specific error handling. Use a cleanup trap for everything else.
+  * use `set -u` in your scripts. This will terminate your scripts in
+  case an uninitialized variable is accessed. This is especially important when
+  developing shell libraries, since library code accessing uninitialized
+  variables will fail in case it's used in another script which sets the `-u`
+  flag. Obviously this flag is relevant to the script's/code's security.
+  * use `set -o pipefail` to get an exit status from a pipeline (last
+  non-zero will be returned).
+* never use TAB for intendation:
+   * consistently use two (2) or four (4) character intendation.
 * **always** put parameters in double-quotes: `util "--argument" "${variable}"`.
 * do not put `if .. then`, `while .. do` or `for .. do`, `case .. in` et cetera on a new line. this is more a tradition than actual convention. Most Bash programmers will use that style - for the sake of simplicity, let's do as well:
     ```bash
@@ -100,31 +114,37 @@ Issue in this GitHub repository if you disagree.
 
 * be as modular and plugable as possible and;
 * if a project gets bigger, split it up into smaller files with clear and obvious naming scheme
-* scripts should use the following layout for each needed section
+* clearly document code parts that are not easily understood (long chains of piped commands for example)
+* try to stick to [restricted mode](http://www.tldp.org/LDP/abs/html/restricted-sh.html) where sensible and possible to use: `set -r` (not supported in old versions of Bash). **Use with caution.** While this flag is *very useful for security* sensitive environments, scripts have to be written with the flag in mind. Adding restricted mode to an existing script will most likely break it.
+* Thus, scripts should somewhat reflect the following general layout:
    ```
    #!/usr/bin/env bash
+   #
+   # AUTHORS, LICENSE and DOCUMENTATION
+   #
+   set -eu -o pipefail
 
    Readonly Variables
    Global Variables
 
+   Import ("source scriptname") of external source code 
+
    Functions
+    `-. function local variables
+    `-. clearly describe interfaces: return either a code or string
 
    Main
-   ```
+    `-. option parsing
+    `-. log file and syslog handling
+    `-. temp. file and named pipe handling
+    `-. signal traps
 
-* clearly document code parts that are not easily understood (long chains of piped commands for example)
-* never use unescaped variables - while it *might* not always be the case that this could break something, conditioning yourself to do it in one way will benefit your code quality and robustness. Like that:`${MyVariable}`
-* never write a script without `set -e` at the very very beginning.
-  This instructs bash to terminate in case a command or chain of command
-  finishes with a non-zero exit status. The idea behind this is that a proper
-  programm should never have unhandled error conditions. Use constructs like
-  `if myprogramm --parameter ; then ... ` for calls that might fail and
-  require specific error handling. Use a cleanup trap for everything else.
-* try to use `set -u` in your scripts. This will terminate your scripts in
-  case an uninitialized variable is accessed. This is especially important when
-  developing shell libraries, since library code accessing uninitialized
-  variables will fail in case it's used in another script which sets the `-u`
-  flag.
+    --------------------------------------------------------------------------
+    To keep in mind:
+    - quoting of all variables passed when executing sub-shells or cli tools
+    - testing of functions, conditionals and flow (see style guide)
+    - makes restricted mode ("set -r") for security sense here?
+   ```
 * Silence is golden - like in any UNIX programm, avoid cluttering the
   terminal with useless output. [Read this](http://www.linfo.org/rule_of_silence.html).
 
@@ -139,6 +159,7 @@ Issue in this GitHub repository if you disagree.
 * http://mywiki.wooledge.org/BashWeaknesses
 * https://github.com/docopt/docopts (see: http://docopt.org)
 * http://isquared.nl/blog/2012/11/19/bash-lambda-expressions
+* http://www.davidpashley.com/articles/writing-robust-shell-scripts/
 
 ### Linting and static analysis:
 * http://www.shellcheck.net (https://github.com/koalaman/shellcheck)
@@ -146,9 +167,6 @@ Issue in this GitHub repository if you disagree.
 #### Portability
 * https://github.com/duggan/shlint
 * http://manpages.ubuntu.com/manpages/natty/man1/checkbashisms.1.html
-
-#### Misc
-* https://www.npmjs.org/package/grunt-lint-bash
 
 ### Test driven development and Unit testing:
 * https://github.com/sstephenson/bats
@@ -461,6 +479,13 @@ function send() {
 you may consider using `nc` (netcat) or even the far more advanced program `socat`: 
 * http://www.dest-unreach.org/socat/doc/socat.html
 * http://stuff.mit.edu/afs/sipb/machine/penguin-lust/src/socat-1.7.1.2/EXAMPLES
+
+### Foreign Function Interface
+Tavis Ormandy wrote a FFI for Bash. You can directly access function
+from shared libraries in bash using `ctypes.sh`. It's a nice hack, but
+use is somewhat discouraged. Use userland utilities.
+
+[ctypes.sh](https://github.com/taviso/ctypes.sh)
 
 ## Final remarks
 Every contribution is valuable to this effort. I'll do my best to
