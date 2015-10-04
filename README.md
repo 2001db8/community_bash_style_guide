@@ -236,13 +236,13 @@ versus using appropriate userland utilities:
 ```bash
 pgrep ${processname}
 ```
-in case you really need the whole output of `ps` vs. only the PID when using `pgrep` you can put the first letter of the process name you are seraching for in square brackets:
+In the rare case that you really need the whole output of `ps` for a process versus only the PID when using `pgrep` you can put the first letter of the process name you are seraching for in square brackets:
 ```bash
 $ ps au | grep bash
 user   12415  0.0  1.1  23640  8416 pts/8    Ss   18:27   0:00 -bash
 user   14045  0.0  0.1   7932  1044 pts/10   S+   19:58   0:00 grep --color=auto bash
 ```
-vs.
+versus
 ```bash
 $ ps au | grep [b]ash
 user   12415  0.0  1.1  23640  8416 pts/8    Ss   18:27   0:00 -bash
